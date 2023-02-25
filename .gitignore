@@ -17,3 +17,4 @@ myprogram
 .depend/
 
 build/
+src/test/

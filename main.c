@@ -1,20 +1,15 @@
-#include <ncurses.h>
+#include <curses.h>
+#include "src/windows.h"
 
 int main(void) {
-    // initialize ncurses
-    initscr();
-    
-    // print a message
-    printw("Hello, ncurses!");
+    init();
 
-    // refresh the screen to show the message
-    refresh();
-    
-    // wait for user input
-    getch();
+    init_windows();
 
-    // end ncurses mode
+    while (1) {
+        refreshWindows();
+    }
     endwin();
-    
+
     return 0;
 }
