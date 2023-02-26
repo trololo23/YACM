@@ -12,11 +12,17 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-enum { DIRECT = 0, FILEE = 1, LINK = 2};
+enum { DIRECT = 0, FILEE = 1, LINK = 2, NOACCESS = 3 };
 
 #define MAX_PATH 50
 
+typedef struct Info {
+    char perms[10];
+    size_t size;
+} Info;
+
 typedef struct Unit {
+    Info info;
     char buf[MAX_PATH];
     int type;
 } Unit;
@@ -26,7 +32,6 @@ typedef struct Directory {
     Unit* units;
 } Directory;
 
-// returns number of files/dirs 
 Directory listDir();
 
 void initPath();

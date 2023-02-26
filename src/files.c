@@ -7,6 +7,29 @@
 
 static char cur_directory_path[PATH_MAX];
 
+static const char *perms_to_str(char *buf, int perms) {
+    const char *fmt[] = {"---", "--x", "-w-", "-wx",
+                         "r--", "r-x", "rw-", "rwx"};
+    sprintf(buf, "%s%s%s", fmt[(perms & 0700) >> 6],
+             fmt[(perms & 0070) >> 3], fmt[perms & 0007]);
+
+    if ((perms & S_ISUID) && ((perms & S_IXGRP) || (perms & S_IXOTH))) {
+        buf[2] = 's';
+    }
+
+    if ((perms & S_ISGID) && (perms & S_IXOTH)) {
+            buf[5] = 's';
+    }
+
+    if ((perms & S_ISVTX) && (perms & S_IXOTH) && (perms & S_IWOTH)) {
+            buf[8] = 't';
+    }
+
+    buf[9] = '\0';
+
+    return buf;
+}
+
 void go_dir(char* name_to_add) {
     sprintf(cur_directory_path, "%s/%s", cur_directory_path, name_to_add);
 }
@@ -21,6 +44,7 @@ void initPath() {
         perror("Error with getting current path\n");
         exit(EXIT_FAILURE);
     }
+    
 }
 
 static int compareUnits(const void* first, const void* second) {
@@ -28,6 +52,22 @@ static int compareUnits(const void* first, const void* second) {
     const Unit* second_p = (const Unit*)(second);
     return strcmp(first_p->buf, second_p->buf);
 }
+
+static void fillInfo(size_t ind, const Directory* dir) {
+    char abs_path[PATH_MAX];
+    sprintf(abs_path, "%s/%s", cur_directory_path, dir->units[ind].buf);
+
+    if (access(abs_path, R_OK) == -1) {
+        dir->units[ind].type = NOACCESS;
+        return; // ?
+    }
+
+    struct stat unit_stat;
+    if (stat(abs_path, &unit_stat) == 0) {
+        dir->units[ind].info.size = unit_stat.st_size;
+        perms_to_str(dir->units[ind].info.perms, unit_stat.st_mode);
+    }
+} 
 
 Directory listDir() {
     Directory cur_directory;
@@ -68,6 +108,7 @@ Directory listDir() {
             cur_directory.units[cur_ind].type = FILEE;
         } 
         snprintf(cur_directory.units[cur_ind].buf, MAX_PATH, "%s", ent->d_name);
+        fillInfo(cur_ind, &cur_directory);
         ++cur_ind;
     } 
     
