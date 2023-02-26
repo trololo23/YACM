@@ -3,6 +3,7 @@
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static char cur_directory_path[PATH_MAX];
 
@@ -11,7 +12,7 @@ void go_dir(char* name_to_add) {
 }
 
 void out_dir() {
-    char* it = strchr(cur_directory_path, '/');
+    char* it = strrchr(cur_directory_path, '/');
     *it = '\0';
 }
 
@@ -75,4 +76,14 @@ Directory listDir() {
     closedir(dir);
 
     return cur_directory;
+}
+
+void remove_file(const char *file_name) {
+    char path_to_file[PATH_MAX];
+    snprintf(path_to_file, PATH_MAX, "%s/%s", cur_directory_path, file_name);
+    if (access(path_to_file, W_OK) == 0) {
+        remove(path_to_file);
+    } else {
+        // some error handling, think later
+    }
 }

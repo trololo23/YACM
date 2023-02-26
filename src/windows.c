@@ -18,10 +18,12 @@ static void initColors() {
 } 
 
 static void refreshDir() {
+    wclear(main_win);
     if (main_cur_dir.units) {
         free(main_cur_dir.units);
     }
     main_cur_dir = listDir();
+    main_cur_ind = 0;
 }
 
 void init() {
@@ -81,10 +83,30 @@ void refreshWindows() {
     keyboardHandle();
 }
 
+static void deleteFile() {
+    if (!main_cur_ind || main_cur_dir.units[main_cur_ind].type != FILEE) {
+        return;
+    }
+    remove_file(main_cur_dir.units[main_cur_ind].buf);
+    refreshDir();
+}
+
+static void go() {
+    if (main_cur_ind) {
+        if (main_cur_dir.units[main_cur_ind].type == DIRECT) {
+            go_dir(main_cur_dir.units[main_cur_ind].buf);
+            refreshDir();
+        }
+    } else {
+        out_dir();
+        refreshDir();
+    }
+}
+
 void keyboardHandle() {
     int ch;
     ch = getch();
-    
+
     if (ch == KEY_UP) {
         if (main_cur_ind > 0) {
             --main_cur_ind;
@@ -97,7 +119,11 @@ void keyboardHandle() {
 
     } else if (ch == KEY_LEFT) {
 
-    } else if (ch == 'q') {
+    } else if (ch == 'w') { // Enter doesn't work for some reasons
+        go();
+    } else if (ch == 'D') {
+        deleteFile();
+    }else if (ch == 'q') {
         endwin();
         exit(0);
     }
