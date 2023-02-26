@@ -4,8 +4,6 @@
 int main(void) {
     init();
 
-    init_windows();
-
     while (1) {
         refreshWindows();
     }

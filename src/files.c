@@ -1,12 +1,37 @@
 #include "files.h"
 #include <dirent.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-Directory listDir(const char* path) {
+static char cur_directory_path[PATH_MAX];
+
+void go_dir(char* name_to_add) {
+    sprintf(cur_directory_path, "%s/%s", cur_directory_path, name_to_add);
+}
+
+void out_dir() {
+    char* it = strchr(cur_directory_path, '/');
+    *it = '\0';
+}
+
+void initPath() {
+    if (getcwd(cur_directory_path, sizeof(cur_directory_path)) == NULL) {
+        perror("Error with getting current path\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+static int compareUnits(const void* first, const void* second) {
+    const Unit* first_p = (const Unit*)(first);
+    const Unit* second_p = (const Unit*)(second);
+    return strcmp(first_p->buf, second_p->buf);
+}
+
+Directory listDir() {
     Directory cur_directory;
 
-    DIR* dir = opendir(path);
+    DIR* dir = opendir(cur_directory_path);
     if (!dir) {
         perror("Can't open dir\n");
         exit(EXIT_FAILURE);
@@ -45,6 +70,8 @@ Directory listDir(const char* path) {
         ++cur_ind;
     } 
     
+    qsort(cur_directory.units + 1, cur_directory.size - 1, sizeof(Unit), compareUnits);
+
     closedir(dir);
 
     return cur_directory;

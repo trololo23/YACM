@@ -7,3 +7,5 @@ void init_windows();
 
 void refreshWindows();
 void displayDir();
+
+void keyboardHandle();

@@ -27,4 +27,10 @@ typedef struct Directory {
 } Directory;
 
 // returns number of files/dirs 
-Directory listDir(const char* path);
+Directory listDir();
+
+void initPath();
+
+void go_dir(char* name_to_add);
+
+void out_dir();
