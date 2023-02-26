@@ -12,19 +12,23 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-enum { DIRECT = 0, FILEE = 1, LINK = 2, NOACCESS = 3 };
+enum { DIRECT = 0, FILEE = 1, LINK = 2 };
 
 #define MAX_PATH 50
+
+// доступ, скрытость, готовность у удалению
+enum { R_ISHIDE = 0b1, R_ISREAD = 0b01, R_ISCUT = 0b001 };
 
 typedef struct Info {
     char perms[10];
     size_t size;
+    int8_t rights;
 } Info;
 
 typedef struct Unit {
     Info info;
     char buf[MAX_PATH];
-    int type;
+    int type;     
 } Unit;
 
 typedef struct Directory {
@@ -32,7 +36,7 @@ typedef struct Directory {
     Unit* units;
 } Directory;
 
-Directory listDir();
+Directory listDir(int mode);
 
 void initPath();
 
@@ -41,3 +45,5 @@ void go_dir(char* name_to_add);
 void out_dir();
 
 void remove_file(const char *file_name);
+
+const char* getPath();

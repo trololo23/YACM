@@ -56,11 +56,16 @@ static int compareUnits(const void* first, const void* second) {
 static void fillInfo(size_t ind, const Directory* dir) {
     char abs_path[PATH_MAX];
     sprintf(abs_path, "%s/%s", cur_directory_path, dir->units[ind].buf);
+    dir->units[ind].info.rights = 0;
+
+    if (dir->units[ind].buf[0] == '.') {
+        dir->units[ind].info.rights |= R_ISHIDE;
+    }
 
     if (access(abs_path, R_OK) == -1) {
-        dir->units[ind].type = NOACCESS;
-        return; // ?
+        return; 
     }
+    dir->units[ind].info.rights |= R_ISREAD;
 
     struct stat unit_stat;
     if (stat(abs_path, &unit_stat) == 0) {
@@ -69,7 +74,7 @@ static void fillInfo(size_t ind, const Directory* dir) {
     }
 } 
 
-Directory listDir() {
+Directory listDir(int hide_mode) {
     Directory cur_directory;
 
     DIR* dir = opendir(cur_directory_path);
@@ -83,6 +88,9 @@ Directory listDir() {
     struct dirent *ent; 
     while ((ent = readdir(dir))) { 
         if (!strcmp(ent->d_name, ".")) {
+            continue;
+        }
+        if (ent->d_name[0] == '.' && !hide_mode) { // Don't look at hidden files
             continue;
         }
         ++units_count;
@@ -100,6 +108,8 @@ Directory listDir() {
     while ((ent = readdir(dir))) { 
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) { 
             continue; 
+        } else if (ent->d_name[0] == '.' && !hide_mode) {
+            continue;
         } else if (ent->d_type == DT_DIR) { 
             cur_directory.units[cur_ind].type = DIRECT;
         } else if (ent->d_type == DT_LNK) {
@@ -107,14 +117,18 @@ Directory listDir() {
         } else if (ent->d_type == DT_REG) { 
             cur_directory.units[cur_ind].type = FILEE;
         } 
+
         snprintf(cur_directory.units[cur_ind].buf, MAX_PATH, "%s", ent->d_name);
         fillInfo(cur_ind, &cur_directory);
         ++cur_ind;
     } 
-    
+
     qsort(cur_directory.units + 1, cur_directory.size - 1, sizeof(Unit), compareUnits);
 
+    // exit(0);
+
     closedir(dir);
+
 
     return cur_directory;
 }
@@ -127,4 +141,8 @@ void remove_file(const char *file_name) {
     } else {
         // some error handling, think later
     }
+}
+
+const char* getPath() {
+    return cur_directory_path;
 }

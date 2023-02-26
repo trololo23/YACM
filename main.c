@@ -7,6 +7,7 @@ int main(void) {
     while (1) {
         refreshWindows();
     }
+    
     endwin();
 
     return 0;
