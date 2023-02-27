@@ -125,12 +125,12 @@ void displayInfo() {
     wattroff(path_win, A_BOLD);
     wattroff(path_win, COLOR_PAIR(6));
 
-    int start_ind = MAX(0, main_cur_ind - (MAX_Y / 2) + 2);
+    int start_ind = MAX(0, main_cur_ind - (MAIN_Y / 2) + 2);
     for (size_t i = start_ind; i < main_cur_dir.size; ++i) {
         if (i - start_ind + 1 == MAIN_Y - 1) {
             break;
         }
-        if (i == 0 || !(main_cur_dir.units[i].info.rights & R_ISREAD)) {
+        if (i == 0 || !(main_cur_dir.units[i].info.rights & R_ISREAD) || (main_cur_dir.units[i].info.rights & R_ISHIDE && !show_hidden_files)) {
             continue;
         }
         wattron(main_win, A_BOLD);

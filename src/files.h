@@ -17,7 +17,7 @@ enum { DIRECT = 0, FILEE = 1, LINK = 2 };
 #define MAX_PATH 50
 
 // доступ, скрытость, готовность у удалению
-enum { R_ISHIDE = 0b1, R_ISREAD = 0b01, R_ISCUT = 0b001 };
+enum { R_ISHIDE = 0b1, R_ISREAD = 0b10, R_ISCUT = 0b100 };
 
 typedef struct Info {
     char perms[10];

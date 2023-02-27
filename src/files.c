@@ -90,9 +90,10 @@ Directory listDir(int hide_mode) {
         if (!strcmp(ent->d_name, ".")) {
             continue;
         }
-        if (ent->d_name[0] == '.' && !hide_mode) { // Don't look at hidden files
+        if (strcmp(ent->d_name, "..") && ent->d_name[0] == '.' && !hide_mode) { // Don't look at hidden files
             continue;
         }
+
         ++units_count;
     } 
 
@@ -102,6 +103,7 @@ Directory listDir(int hide_mode) {
     cur_directory.size = units_count;
 
     snprintf(cur_directory.units[0].buf, MAX_PATH, "%s", "..");
+    cur_directory.units[0].info.rights = 0b10;
 
     size_t cur_ind = 1;
 
