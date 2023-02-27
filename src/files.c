@@ -7,22 +7,20 @@
 
 static char cur_directory_path[PATH_MAX];
 
-static const char *perms_to_str(char *buf, int perms) {
-    const char *fmt[] = {"---", "--x", "-w-", "-wx",
-                         "r--", "r-x", "rw-", "rwx"};
-    sprintf(buf, "%s%s%s", fmt[(perms & 0700) >> 6],
-             fmt[(perms & 0070) >> 3], fmt[perms & 0007]);
+static const char* perms_to_str(char* buf, int perms) {
+    const char* fmt[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+    sprintf(buf, "%s%s%s", fmt[(perms & 0700) >> 6], fmt[(perms & 0070) >> 3], fmt[perms & 0007]);
 
     if ((perms & S_ISUID) && ((perms & S_IXGRP) || (perms & S_IXOTH))) {
         buf[2] = 's';
     }
 
     if ((perms & S_ISGID) && (perms & S_IXOTH)) {
-            buf[5] = 's';
+        buf[5] = 's';
     }
 
     if ((perms & S_ISVTX) && (perms & S_IXOTH) && (perms & S_IWOTH)) {
-            buf[8] = 't';
+        buf[8] = 't';
     }
 
     buf[9] = '\0';
@@ -44,7 +42,6 @@ void initPath() {
         perror("Error with getting current path\n");
         exit(EXIT_FAILURE);
     }
-    
 }
 
 static int compareUnits(const void* first, const void* second) {
@@ -63,7 +60,7 @@ static void fillInfo(size_t ind, const Directory* dir) {
     }
 
     if (access(abs_path, R_OK) == -1) {
-        return; 
+        return;
     }
     dir->units[ind].info.rights |= R_ISREAD;
 
@@ -72,7 +69,7 @@ static void fillInfo(size_t ind, const Directory* dir) {
         dir->units[ind].info.size = unit_stat.st_size;
         perms_to_str(dir->units[ind].info.perms, unit_stat.st_mode);
     }
-} 
+}
 
 Directory listDir(int hide_mode) {
     Directory cur_directory;
@@ -83,19 +80,19 @@ Directory listDir(int hide_mode) {
         exit(EXIT_FAILURE);
     }
 
-    size_t units_count = 0; 
+    size_t units_count = 0;
 
-    struct dirent *ent; 
-    while ((ent = readdir(dir))) { 
+    struct dirent* ent;
+    while ((ent = readdir(dir))) {
         if (!strcmp(ent->d_name, ".")) {
             continue;
         }
-        if (strcmp(ent->d_name, "..") && ent->d_name[0] == '.' && !hide_mode) { // Don't look at hidden files
+        if (strcmp(ent->d_name, "..") && ent->d_name[0] == '.' && !hide_mode) {  // Don't look at hidden files
             continue;
         }
 
         ++units_count;
-    } 
+    }
 
     rewinddir(dir);
 
@@ -107,23 +104,23 @@ Directory listDir(int hide_mode) {
 
     size_t cur_ind = 1;
 
-    while ((ent = readdir(dir))) { 
-        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) { 
-            continue; 
+    while ((ent = readdir(dir))) {
+        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
+            continue;
         } else if (ent->d_name[0] == '.' && !hide_mode) {
             continue;
-        } else if (ent->d_type == DT_DIR) { 
+        } else if (ent->d_type == DT_DIR) {
             cur_directory.units[cur_ind].type = DIRECT;
         } else if (ent->d_type == DT_LNK) {
             cur_directory.units[cur_ind].type = LINK;
-        } else if (ent->d_type == DT_REG) { 
+        } else if (ent->d_type == DT_REG) {
             cur_directory.units[cur_ind].type = FILEE;
-        } 
+        }
 
         snprintf(cur_directory.units[cur_ind].buf, MAX_PATH, "%s", ent->d_name);
         fillInfo(cur_ind, &cur_directory);
         ++cur_ind;
-    } 
+    }
 
     qsort(cur_directory.units + 1, cur_directory.size - 1, sizeof(Unit), compareUnits);
 
@@ -131,11 +128,10 @@ Directory listDir(int hide_mode) {
 
     closedir(dir);
 
-
     return cur_directory;
 }
 
-void remove_file(const char *file_name) {
+void remove_file(const char* file_name) {
     char path_to_file[PATH_MAX];
     snprintf(path_to_file, PATH_MAX, "%s/%s", cur_directory_path, file_name);
     if (access(path_to_file, W_OK) == 0) {
