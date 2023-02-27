@@ -7,7 +7,7 @@ find_package(Curses REQUIRED)
 include_directories(${CURSES_INCLUDE_DIR})
 
 # add executable
-add_executable(myproject main.c src/windows.c src/files.c)
+add_executable(myproject main.c src/windows.c src/files.c src/system.c)
 
 # link against ncurses library
 target_link_libraries(myproject ${CURSES_LIBRARIES})

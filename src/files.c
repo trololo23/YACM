@@ -51,20 +51,25 @@ static int compareUnits(const void* first, const void* second) {
 }
 
 static void fillInfo(size_t ind, const Directory* dir) {
-    char abs_path[PATH_MAX];
-    sprintf(abs_path, "%s/%s", cur_directory_path, dir->units[ind].buf);
+    char abs_path[PATH_MAX]; /* Set default rights */
+    fillFilePath(dir->units[ind].buf, abs_path);
     dir->units[ind].info.rights = 0;
 
-    if (dir->units[ind].buf[0] == '.') {
+    if (dir->units[ind].buf[0] == '.') { /* Set hiddens */
         dir->units[ind].info.rights |= R_ISHIDE;
     }
 
-    if (access(abs_path, R_OK) == -1) {
+    char* file_to_remove_path = getToRemove(); /* Set to remove */
+    if (file_to_remove_path && !strcmp(abs_path, file_to_remove_path)) {
+        dir->units[ind].info.rights |= R_ISCUT;
+    }
+
+    if (access(abs_path, R_OK) == -1) { /* Set no access */
         return;
     }
     dir->units[ind].info.rights |= R_ISREAD;
 
-    struct stat unit_stat;
+    struct stat unit_stat; /* Fill other info to display later */
     if (stat(abs_path, &unit_stat) == 0) {
         dir->units[ind].info.size = unit_stat.st_size;
         perms_to_str(dir->units[ind].info.perms, unit_stat.st_mode);
@@ -124,8 +129,6 @@ Directory listDir(int hide_mode) {
 
     qsort(cur_directory.units + 1, cur_directory.size - 1, sizeof(Unit), compareUnits);
 
-    // exit(0);
-
     closedir(dir);
 
     return cur_directory;
@@ -133,7 +136,7 @@ Directory listDir(int hide_mode) {
 
 void remove_file(const char* file_name) {
     char path_to_file[PATH_MAX];
-    snprintf(path_to_file, PATH_MAX, "%s/%s", cur_directory_path, file_name);
+    fillFilePath(file_name, path_to_file);
     if (access(path_to_file, W_OK) == 0) {
         remove(path_to_file);
     } else {
@@ -143,4 +146,8 @@ void remove_file(const char* file_name) {
 
 const char* getPath() {
     return cur_directory_path;
+}
+
+void fillFilePath(const char *file_name, char *buf) {
+    snprintf(buf, PATH_MAX, "%s/%s", cur_directory_path, file_name);
 }

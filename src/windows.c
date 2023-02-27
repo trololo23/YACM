@@ -48,6 +48,7 @@ static void initColors() {
     init_pair(6, COLOR_ORANGE, COLOR_BLACK); /* For path */
     init_pair(7, COLOR_YELLOW, COLOR_BLACK); /* For hidden files */
     init_pair(8, COLOR_GREEN, COLOR_BLACK);  /* Other files */
+    init_pair(9, COLOR_GREEN, COLOR_ORANGE); /* Files to remove */
 }
 
 static void refreshDir() {
@@ -94,6 +95,8 @@ void displayDir() {
             break;
         } else if (i == main_cur_ind) {
             SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 3);
+        } else if (main_cur_dir.units[i].info.rights & R_ISCUT) {
+            SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 9);
         } else if (main_cur_dir.units[i].info.rights & R_ISHIDE) {
             SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 7);
         } else if (!(main_cur_dir.units[i].info.rights & R_ISREAD)) {
@@ -178,6 +181,23 @@ static void change_hide_mode() {
     refreshDir();
 }
 
+static void ctrlX() {
+    if (!(main_cur_dir.units[main_cur_ind].info.rights & R_ISREAD)) {
+        return; // We can't remove if we can't read
+    }
+    char path_to_file[PATH_MAX];
+    fillFilePath(main_cur_dir.units[main_cur_ind].buf, path_to_file);
+    setToRemove(path_to_file);
+    refreshDir();
+}
+
+static void ctrlV() {
+    char path_to_file[PATH_MAX];
+    fillFilePath("bebra.cpp", path_to_file); // FIX LATER FUCK
+    Remove(path_to_file);
+    refreshDir();
+}
+
 void keyboardHandle() {  // Мб потом через какую-нибудь таблицу обраюотчиков это сделать
     int ch;
     ch = getch();
@@ -200,6 +220,10 @@ void keyboardHandle() {  // Мб потом через какую-нибудь �
         deleteFile();
     } else if (ch == 'H') {
         change_hide_mode();
+    } else if (ch == 'X') {
+        ctrlX();
+    } else if (ch == 'V') {
+        ctrlV();
     } else if (ch == 'q') {
         endwin();
         exit(0);

@@ -12,11 +12,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "system.h"
+
 enum { DIRECT = 0, FILEE = 1, LINK = 2 };
 
 #define MAX_PATH 50
 
-// доступ, скрытость, готовность у удалению
 enum { R_ISHIDE = 0b1, R_ISREAD = 0b10, R_ISCUT = 0b100 };
 
 typedef struct Info {
@@ -47,3 +48,5 @@ void out_dir();
 void remove_file(const char *file_name);
 
 const char* getPath();
+
+void fillFilePath(const char* file_name, char* buf);
