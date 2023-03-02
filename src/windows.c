@@ -5,7 +5,9 @@
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "files.h"
 #include "system.h"
+#include <dlfcn.h>
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
@@ -197,6 +199,24 @@ static void enter() {
         if (main_cur_dir.units[main_cur_ind].type == DIRECT) {
             go_dir(main_cur_dir.units[main_cur_ind].buf);
             refreshDir();
+        } else {
+            void *ptr = dlopen("./../src/shared/build/libshared.so", RTLD_LAZY);
+            if (!ptr) {
+                setMessage("Failed to open ide!");
+                return;
+            }
+
+            int (*func_ptr)(const char*) = dlsym(ptr, "open_file");
+            if (!func_ptr) {
+                setMessage("Failed to open ide!");
+                return;
+            }
+
+            char file_path[PATH_MAX];
+            fillFilePath(main_cur_dir.units[main_cur_ind].buf, file_path);
+            func_ptr(file_path);
+
+            dlclose(ptr);
         }
     } else {
         out_dir();
