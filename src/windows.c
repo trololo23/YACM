@@ -1,14 +1,19 @@
 #include "windows.h"
+#include "errhandler.h"
+
 #include <curses.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "system.h"
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 WINDOW* main_win;
+WINDOW* co_win;
 WINDOW* path_win;
+WINDOW* mess_win;
 
 int main_cur_ind = 0;
 Directory main_cur_dir;
@@ -39,19 +44,20 @@ int show_hidden_files = 0;
 
 static void initColors() {
     init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(3, COLOR_CYAN, COLOR_WHITE); /* For cur file */
-    init_pair(4, COLOR_RED, COLOR_BLACK);  /* For no acess files */
-    init_pair(5, COLOR_CYAN, COLOR_BLACK); /* For labels */
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK); /* Don't remember */
+    init_pair(3, COLOR_CYAN, COLOR_WHITE);   /* For cur file */
+    init_pair(4, COLOR_RED, COLOR_BLACK);    /* For no acess files */
+    init_pair(5, COLOR_CYAN, COLOR_BLACK);   /* For labels */
 
     init_color(COLOR_ORANGE, 1000, 500, 0);
-    init_pair(6, COLOR_ORANGE, COLOR_BLACK); /* For path */
-    init_pair(7, COLOR_YELLOW, COLOR_BLACK); /* For hidden files */
-    init_pair(8, COLOR_GREEN, COLOR_BLACK);  /* Other files */
-    init_pair(9, COLOR_GREEN, COLOR_ORANGE); /* Files to remove */
+    init_pair(6, COLOR_ORANGE, COLOR_BLACK);  /* For path */
+    init_pair(7, COLOR_YELLOW, COLOR_BLACK);  /* For hidden files */
+    init_pair(8, COLOR_GREEN, COLOR_BLACK);   /* Other files */
+    init_pair(9, COLOR_ORANGE, COLOR_BLUE);   /* Files to remove */
+    init_pair(10, COLOR_ORANGE, COLOR_GREEN); /* Files to copy */
 }
 
-static void refreshDir() {
+static void refreshDir() { /* Updates loaded directory info, allowes to not go over directory each frame */
     if (main_cur_dir.units) {
         free(main_cur_dir.units);
     }
@@ -82,9 +88,18 @@ void init_windows() {
         box(main_win, 0, 0);
     }
 
+    {  // co window
+        co_win = newwin(MAIN_Y, MAIN_X, 0, MAIN_X);
+        box(co_win, 0, 0);
+    }
+
     {  // lower info window
         path_win = newwin(1, MAIN_X, MAX_Y - 2, 0);
         INFO_PATH_SHIFT = 10;
+    }
+
+    {  // mess win
+        mess_win = newwin(1, MAIN_X, MAX_Y - 2, MAIN_X);
     }
 }
 
@@ -96,7 +111,9 @@ void displayDir() {
         } else if (i == main_cur_ind) {
             SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 3);
         } else if (main_cur_dir.units[i].info.rights & R_ISCUT) {
-            SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 9);
+            SET_COLOR_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 9);
+        } else if (main_cur_dir.units[i].info.rights & R_ISCOPY) {
+            SET_COLOR_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 10);
         } else if (main_cur_dir.units[i].info.rights & R_ISHIDE) {
             SET_COLOR_NO_BOLD(main_win, i - start_ind + 1, 1, main_cur_dir.units[i].buf, 7);
         } else if (!(main_cur_dir.units[i].info.rights & R_ISREAD)) {
@@ -114,14 +131,20 @@ void displayDir() {
 }
 
 void displayInfo() {
+    /* Set Up Info */
     SET_COLOR_BOLD(main_win, 0, 1, "Name", 5);
     SET_COLOR_BOLD(main_win, 0, INFO_SIZE_SHIFT, "Size", 5);
     SET_COLOR_BOLD(main_win, 0, INFO_PERM_SHIFT, "Perms", 5);
     SET_COLOR_BOLD(path_win, 0, INFO_PATH_SHIFT, getPath(), 6);
 
+    /* Set directory info */
     char cur_file_str[20];
     sprintf(cur_file_str, "(%d/%d)", main_cur_ind + 1, main_cur_dir.size);
     SET_COLOR_BOLD(path_win, 0, 1, cur_file_str, 6);
+
+    /* Set message info */
+    const char* mess = getMessage();
+    SET_COLOR_BOLD(mess_win, 0, 1, mess, 6);
 
     int start_ind = MAX(0, main_cur_ind - (MAIN_Y / 2) + 2);
     for (size_t i = start_ind; i < main_cur_dir.size; ++i) {
@@ -141,22 +164,27 @@ void displayInfo() {
 
 void refreshWindows() {
     // resize later
-    wclear(main_win);
-    wclear(path_win);
+    werase(main_win);
+    werase(path_win);
+    werase(co_win);
+    werase(mess_win);
 
     box(main_win, 0, 0);
+    box(co_win, 0, 0);
     displayDir();
     displayInfo();
 
     wrefresh(main_win);
     wrefresh(path_win);
+    wrefresh(co_win);
+    wrefresh(mess_win);
 
     keyboardHandle();
 }
 
-/////////////////////////////////////////////////////////////////////
+///////////////////////////  Key Handlers  //////////////////////////////////////////
 
-static void deleteFile() {
+static void ctrlD() {
     if (!main_cur_ind || main_cur_dir.units[main_cur_ind].type != FILEE) {
         return;
     }
@@ -164,7 +192,7 @@ static void deleteFile() {
     refreshDir();
 }
 
-static void go() {
+static void enter() {
     if (main_cur_ind) {
         if (main_cur_dir.units[main_cur_ind].type == DIRECT) {
             go_dir(main_cur_dir.units[main_cur_ind].buf);
@@ -183,18 +211,34 @@ static void change_hide_mode() {
 
 static void ctrlX() {
     if (!(main_cur_dir.units[main_cur_ind].info.rights & R_ISREAD)) {
-        return; // We can't remove if we can't read
+        setMessage("No permissions to remove file!");
+        return;
     }
+    clearCopyPath();
     char path_to_file[PATH_MAX];
     fillFilePath(main_cur_dir.units[main_cur_ind].buf, path_to_file);
     setToRemove(path_to_file);
     refreshDir();
 }
 
-static void ctrlV() {
+static void ctrlC() {
+    if (!(main_cur_dir.units[main_cur_ind].info.rights & R_ISREAD)) {
+        setMessage("No permissions to copy file!");
+        return;
+    }
+    clearRemovePath();
     char path_to_file[PATH_MAX];
-    fillFilePath("bebra.cpp", path_to_file); // FIX LATER FUCK
-    Remove(path_to_file);
+    fillFilePath(main_cur_dir.units[main_cur_ind].buf, path_to_file);
+    setToCopy(path_to_file);
+    refreshDir();
+}
+
+static void ctrlV() {
+    if (getToRemove()) {
+        Remove();
+    } else {
+        Copy();
+    }
     refreshDir();
 }
 
@@ -214,16 +258,18 @@ void keyboardHandle() {  // Мб потом через какую-нибудь �
 
     } else if (ch == KEY_LEFT) {
 
-    } else if (ch == 'w') {  // Enter doesn't work for some reasons
-        go();
+    } else if (ch == 'w') {
+        enter();
     } else if (ch == 'D') {
-        deleteFile();
+        ctrlD();
     } else if (ch == 'H') {
         change_hide_mode();
     } else if (ch == 'X') {
         ctrlX();
     } else if (ch == 'V') {
         ctrlV();
+    } else if (ch == 'C') {
+        ctrlC();
     } else if (ch == 'q') {
         endwin();
         exit(0);

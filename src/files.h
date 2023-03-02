@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ncurses.h>
 #include <assert.h>
 #include <ctype.h>
@@ -12,13 +14,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "system.h"
-
 enum { DIRECT = 0, FILEE = 1, LINK = 2 };
 
 #define MAX_PATH 50
 
-enum { R_ISHIDE = 0b1, R_ISREAD = 0b10, R_ISCUT = 0b100 };
+enum { R_ISHIDE = 0b1, R_ISREAD = 0b10, R_ISCUT = 0b100, R_ISCOPY = 0b1000 };
 
 typedef struct Info {
     char perms[10];
@@ -50,3 +50,5 @@ void remove_file(const char *file_name);
 const char* getPath();
 
 void fillFilePath(const char* file_name, char* buf);
+
+void fillFileName(const char *file_path, char *buf);

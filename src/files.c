@@ -1,4 +1,7 @@
 #include "files.h"
+#include "system.h"
+#include "errhandler.h"
+
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
@@ -34,13 +37,17 @@ void go_dir(char* name_to_add) {
 
 void out_dir() {
     char* it = strrchr(cur_directory_path, '/');
+    if (it == cur_directory_path) {
+        setMessage("No permissions to go up!");
+        return;
+    }
     *it = '\0';
 }
 
 void initPath() {
     if (getcwd(cur_directory_path, sizeof(cur_directory_path)) == NULL) {
-        perror("Error with getting current path\n");
-        exit(EXIT_FAILURE);
+        setMessage("Error with getting current path!");
+        return;
     }
 }
 
@@ -64,6 +71,11 @@ static void fillInfo(size_t ind, const Directory* dir) {
         dir->units[ind].info.rights |= R_ISCUT;
     }
 
+    char* file_to_copy_path = getToCopy(); /* Set to copy */
+    if (file_to_copy_path && !strcmp(abs_path, file_to_copy_path)) {
+        dir->units[ind].info.rights |= R_ISCOPY;
+    }
+
     if (access(abs_path, R_OK) == -1) { /* Set no access */
         return;
     }
@@ -81,7 +93,7 @@ Directory listDir(int hide_mode) {
 
     DIR* dir = opendir(cur_directory_path);
     if (!dir) {
-        perror("Can't open dir\n");
+        setMessage("Can't open dir!");
         exit(EXIT_FAILURE);
     }
 
@@ -92,7 +104,8 @@ Directory listDir(int hide_mode) {
         if (!strcmp(ent->d_name, ".")) {
             continue;
         }
-        if (strcmp(ent->d_name, "..") && ent->d_name[0] == '.' && !hide_mode) {  // Don't look at hidden files
+        if (strcmp(ent->d_name, "..") && ent->d_name[0] == '.' &&
+            !hide_mode) { /* Don't look at hidden files */
             continue;
         }
 
@@ -140,7 +153,7 @@ void remove_file(const char* file_name) {
     if (access(path_to_file, W_OK) == 0) {
         remove(path_to_file);
     } else {
-        // some error handling, think later
+        setMessage("No permissions to delete file!");
     }
 }
 
@@ -148,6 +161,11 @@ const char* getPath() {
     return cur_directory_path;
 }
 
-void fillFilePath(const char *file_name, char *buf) {
+void fillFilePath(const char* file_name, char* buf) {
     snprintf(buf, PATH_MAX, "%s/%s", cur_directory_path, file_name);
+}
+
+void fillFileName(const char* file_path, char* buf) {
+    char* it = strrchr(file_path, '/');
+    snprintf(buf, PATH_MAX, "%s", ++it);
 }
