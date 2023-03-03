@@ -1,6 +1,8 @@
 #include "open.h"
 #include "../errhandler.h"
 
+#include <curses.h>
+
 #include <linux/limits.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -23,8 +25,9 @@ static void run_ide(const char* ide_path, const char* name, const char* file_pat
         setMessage("System error, fork failed!");
         return;
     } else {
+        endwin();
         waitpid(pid, NULL, 0);
-        execl("./myproject", "myproject", (char*)NULL); /* Передаю привет виму */
+        initscr();
     }
 }
 
