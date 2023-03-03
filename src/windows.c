@@ -295,3 +295,7 @@ void keyboardHandle() {  // Мб потом через какую-нибудь �
         exit(0);
     }
 }
+
+void clearr() {
+    free(main_cur_dir.units);
+}

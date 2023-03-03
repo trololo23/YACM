@@ -9,6 +9,7 @@ int main(void) {
     }
     
     endwin();
+    clearr();
 
     return 0;
 }

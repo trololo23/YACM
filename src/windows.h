@@ -13,3 +13,4 @@ void displayDir();
 void displayInfo();
 
 void keyboardHandle();
+void clearr();
