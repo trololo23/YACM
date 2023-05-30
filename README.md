@@ -1,10 +1,19 @@
-# Description
-Нормальный ридми будет потом, а пока:
-* ```w``` - войти в директорию(для директории) / открыть файл(для файла), если есть чем открывать
-* ```D``` - удалить
-* ```H``` - показать скрытые файлы
-* ```X```, ```C```, ```V``` - понятно 
-* ```q``` - выход
+# YACM
+Yet Another Console Manager
 
-Ещё чтобы начать надо нажать любую клавишу, это такая фича(баг), я не оч понимаю почему, я этот getch куда только не ставил но всё равно, вообщем если это критично я поищу лучше.
-Присутсвует обширная подсветка файлов - для скрытых, недоступных на чтения, готовых к вырезанию/копированию, директорий и так далее. В целом вроде со всем справился, по хорошему надо ещё build.sh сделать какой-нибудь, но времени совсем мало. Ещё справа снизу есть типо лог ошибок, а в окошке справа когда-нибудь будет тоже что-то хайповое, хотел сделать что-то типо мини-ревью файла/директории, но не успел. 
+# Setup
+Before building the app, you should make sure that you've already installed ncurses. To build the app, just copy the repository and go as usual:
+ * mkdir build
+ * cd build
+ * cmake ..
+ * make YACM
+ * ./YACM
+# Guidance
+ * Use up and down arrows to navigate.
+ * Use ```w``` or ```W``` to go into a directory or try open a file. 
+ * Use ```h``` or ```H``` to switch between hidden files displaying modes. 
+ * Use ```c``` or ```C``` to copy file, the file will be highlighted until pasted.
+ * Use ```v``` or ```V``` to past file respectively, and ```x``` to past with cut.
+ * Use ```q``` or ```Q``` to quit.
+
+At the bottom there is a numbering of files and a log with possible errors. For example, if you try to open a file or directory without the appropriate permissions, a message informing you about this will be displayed.
