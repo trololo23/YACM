@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(myproject)
+project(YACM)
 
 # find ncurses library
 find_package(Curses REQUIRED)
